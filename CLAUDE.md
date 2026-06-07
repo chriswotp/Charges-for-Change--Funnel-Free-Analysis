@@ -10,8 +10,9 @@ This repository is currently **empty** (no source code, configs, or documentatio
 
 ## Development Branch
 
-- **Primary development branch:** `claude/add-claude-documentation-G4kSd`
+- **Current active branch:** `claude/claude-md-docs-KQ1iW`
 - **Remote:** `origin` (GitHub — `chriswotp/Charges-for-Change--Funnel-Free-Analysis`)
+- **Other branch:** `claude/add-claude-documentation-G4kSd` (both branches point to the same initial commit)
 
 ## Getting Started
 
