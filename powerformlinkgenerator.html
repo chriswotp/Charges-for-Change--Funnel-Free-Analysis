@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PowerForm Link Generator — CxC2</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f5f7;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: .25rem;
+    }
+    .subtitle {
+      font-size: .875rem;
+      color: #666;
+      margin-bottom: 1.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #555;
+      margin-bottom: .35rem;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1.5px solid #dde1e7;
+      border-radius: 8px;
+      padding: .65rem .85rem;
+      font-size: .95rem;
+      font-family: inherit;
+      transition: border-color .15s;
+      outline: none;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: #4f46e5; }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .82rem;
+    }
+
+    .field-group { margin-bottom: 1.25rem; }
+
+    .hint {
+      font-size: .78rem;
+      color: #888;
+      margin-top: .3rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .65rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-secondary { background: #e9ecef; color: #333; }
+    .btn-secondary:hover { background: #dee2e6; }
+
+    .btn-row { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .25rem; }
+
+    #output-section { display: none; margin-top: 2rem; }
+
+    .output-label {
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #4f46e5;
+      margin-bottom: .5rem;
+    }
+
+    #generated-link {
+      display: block;
+      word-break: break-all;
+      background: #f8f9fc;
+      border: 1.5px solid #e0e4f0;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .8rem;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      color: #1a1a2e;
+      margin-bottom: 1rem;
+      text-decoration: none;
+    }
+    #generated-link:hover { background: #eef0fa; }
+
+    .stats {
+      font-size: .8rem;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+    .stats strong { color: #1a1a2e; }
+
+    #error-msg {
+      display: none;
+      background: #fff0f0;
+      border: 1.5px solid #fca5a5;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      color: #b91c1c;
+      font-size: .875rem;
+      margin-top: 1rem;
+    }
+
+    .copied-badge {
+      font-size: .75rem;
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      margin-left: .4rem;
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .copied-badge.show { opacity: 1; }
+
+    details {
+      margin-top: 2rem;
+      border-top: 1px solid #eee;
+      padding-top: 1.25rem;
+    }
+    summary {
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #4f46e5;
+      list-style: none;
+    }
+    summary::before { content: "▶ "; font-size: .7rem; }
+    details[open] summary::before { content: "▼ "; }
+    .param-table {
+      margin-top: 1rem;
+      width: 100%;
+      font-size: .78rem;
+      border-collapse: collapse;
+    }
+    .param-table th, .param-table td {
+      text-align: left;
+      padding: .3rem .5rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .param-table th { color: #555; font-weight: 700; }
+    .param-table td:first-child { font-family: monospace; color: #4f46e5; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>PowerForm Link Generator</h1>
+  <p class="subtitle">CxC2 — manual-send fallback (no API or JWT required)</p>
+
+  <div class="field-group">
+    <label for="powerform-id">PowerForm ID</label>
+    <input type="text" id="powerform-id"
+           placeholder="Paste PowerForm UUID from DocuSign UI (Templates → PowerForms)"
+           value="" />
+    <p class="hint">Generate the PowerForm in DocuSign under the template, then paste the ID here.</p>
+  </div>
+
+  <div class="field-group">
+    <label for="fields-json">docusign_fields JSON</label>
+    <textarea id="fields-json" placeholder='Paste the docusign_fields object, e.g.:
+{
+  "LegalName": "Acme Coffee LLC",
+  "DBAName": "Acme Coffee",
+  "OwnerFirstName": "John",
+  ...
+}'></textarea>
+    <p class="hint">Same shape as the intake form payload. PII keys (OwnerSSN, OwnerDOB, OwnerDriversLicense, BankRouting, BankAccount) are automatically excluded.</p>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="generate()">Generate Link</button>
+    <button class="btn btn-secondary" onclick="loadSample()">Load sample</button>
+    <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+  </div>
+
+  <div id="error-msg"></div>
+
+  <div id="output-section">
+    <div class="output-label">Generated PowerForm Link</div>
+    <a id="generated-link" href="#" target="_blank" rel="noopener"></a>
+    <div class="stats" id="stats"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="copyLink()">
+        Copy link <span class="copied-badge" id="copied-badge">Copied!</span>
+      </button>
+      <button class="btn btn-secondary" onclick="openLink()">Open in new tab</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>Supported field names (URL parameter reference)</summary>
+    <table class="param-table">
+      <thead><tr><th>Field key</th><th>Maps to DocuSign tabs</th></tr></thead>
+      <tbody id="param-table-body"></tbody>
+    </table>
+  </details>
+</div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const BASE_URL = "https://demo.docusign.net/Member/PowerFormSigning.aspx";
+
+const STRIP_KEYS = new Set([
+  "OwnerSSN", "OwnerDOB", "OwnerDriversLicense", "BankRouting", "BankAccount"
+]);
+
+// Same map as the Netlify function — field key = URL param name
+const TEXT_TAB_MAP = {
+  "SalesRepName":         ["Sales Rep Name 800a8d04-e1ca-42e1-9655-9f4a623ba22c", "FiServ-SalesRep 8a1bd88b-a7ea-431d-b954-e630a345d634"],
+  "DBAName":              ["BusinessNameDBA(P1) 0da9b8c0-1328-4b5c-bc14-aa2e6b9c2b1a", "DBAName a2a5989a-9772-4eb3-b7f1-9a240af1a112", "BusinessNameDBA b03a97e2-a4b2-46ea-8b4f-2a1d149c0293"],
+  "LegalName":            ["BusinessNameLegal(P1) 29d937ce-5bb6-4cb0-9dbf-854ace0fc89d", "BusinessNameLegal(p7) a7a1ccea-0b35-4540-ae10-c8f7526a3011", "LegalName c2ed0f5f-74a1-4327-b48f-42d17cac6589", "BusinessNameLegal 23b466f3-a275-4cfc-b0ea-c0295e1d1d62"],
+  "MerchandiseType":      ["ServiceDescription ac6abc02-d133-404e-9346-dfa17ce3de58"],
+  "BusinessAddress":      ["BusinessAddress e29d6b96-6480-4203-baba-096ce7ad5028", "businessAddress 27a12639-9529-4de8-9eb6-62c167aeb6e8", "BUSINESS ADDRESS if different from above 841df927-8b5c-4f96-9ff7-5d6d0d062143"],
+  "BusinessCity":         ["BusinessCity fbc323ff-821e-4314-8adb-9ccc9db56a01", "businessCity bdcf0aaa-50b1-46ff-8676-be50b8637d52", "BUSINESS CITY fcdd16b8-de78-4ca9-9ec9-e5c6dd55f904"],
+  "BusinessState":        ["BusinessState e855e05b-d188-486f-9f12-9b5a96fa72c6", "businessState 70c8df53-fcfb-4053-ade3-a8b3ba2c62aa", "BUSINESS STATE 1fe6ca72-ec03-4aa8-8406-97837ebcd38b"],
+  "BusinessZip":          ["BusinessZip 61744a54-83e4-4cb1-b27c-103347792532", "businessZip 38838c4a-6102-4bbe-b9d3-07f4ffc2b02b", "BUSINESS ZIP c2d5f202-b42b-458c-a442-89834bea96f9"],
+  "BusinessPhone":        ["BusinessPhone 0b7bca81-c383-4c07-989e-6966a79377d3"],
+  "BusinessEmail":        ["BusinessEmail 16fbd3f1-706d-475b-9a3e-b723c4316c02"],
+  "DateBusinessStarted":  ["History-Date 26ffd447-55e3-43ec-a856-641bb5b56e04"],
+  "FederalTaxID":         ["Business-Tax-2 5826dde6-d906-4409-9123-fce24ee40c88", "TaxID 7c340b84-cfbf-49f4-855c-c1bfb43c12f6"],
+  "OwnerFirstName":       ["ownerNameFirst dc93e3af-a67e-491f-b995-51e7baa9d6ad", "ownerNameFirst 707582ad-25db-4186-975d-912b8f92039a", "ownerNameFirst 222e9f22-ae08-49c5-914c-5ce0c737cf5d"],
+  "OwnerMI":              ["ownerNameMiddle"],
+  "OwnerLastName":        ["ownerNameLast a13116d8-ddad-4c3d-be96-9677106fff73", "ownerNameLast a74a20a6-2ae1-437a-a529-990ac95b131e", "ownerNameLast 43b03c4c-431e-4ef1-b7ff-3c47d081dcf4"],
+  "OwnershipPercent":     ["Owner1Ownership 38e4b1e5-16a4-4c31-b13d-69fd57bb0ecb"],
+  "OwnerTitle":           ["Owner1-Title 1a799acd-e1c2-404e-a267-a0b513cadbb4", "SignerTitle(P6) b9aad5e1-8f6b-49ce-adf3-d76c7a9f1f7d", "SignerTitle 31e781f5-33ea-4819-8c2c-e752b542ec24", "SignerTitle d36a6302-5bde-49b1-8e67-efd91152fed8", "Signertitle(p9) 1cec0397-816b-4b8d-b32e-a3c9e2ece44a"],
+  "OwnerPhone":           ["Owner1-Telephone 8cfc7882-b434-42e6-a24a-57980f497e29", "SUBSCRIBER CELL PHONE 5ae9137b-237a-4362-8d7a-26ac35fbfe82"],
+  "OwnerAddress":         ["Owner1-Address 703d852d-e738-4733-b73c-60161cc200a3", "SignerAddress 4d7cbd6e-6140-4349-bddd-2286f0646ce1"],
+  "OwnerCity":            ["Owner1-City 14506909-2cbc-4bbe-a513-f81b2e8def30", "SignerCity 5e63fd11-f946-4ee2-86df-97821575b9a8"],
+  "OwnerState":           ["Owner1-State 6807a1e4-d31e-4f28-b059-9c83bc53df71", "SignerState 9546289d-b256-44b5-ae1e-054470ee4dc4"],
+  "OwnerZip":             ["Owner1-Zip 354c261b-52f8-44c4-8cd7-41a4cfa766de", "SignerZip 88d6b7cc-efb5-4099-b1a5-83d10fdb0f78"],
+  "BankName":             ["Bank Name b167e366-d347-4a4d-8e40-94d0540eb9a8", "BankName 4ffc13e7-1e5c-4d53-a519-dc6a3686bebb"],
+  "GrossYearlySales":     ["Yearly Gross 813cacf2-f76a-4fab-b05f-c7fd62c672d5"],
+  "YearlyMCVisaVolume":   ["Average YEARLY MC/Visa Volume ea6b3fb9-fc77-4f75-8394-8f69323f1f4d"],
+  "YearlyDiscoverVolume": ["Average Yearly Discover 41001fbd-0fe9-4ed8-8d12-3ebd58d6d367"],
+  "AmexYearlyVolume":     ["Average Yearly AMEX f1c83b4e-ebd8-418a-bf17-513b14d23e3a"],
+  "AvgMCVisaTicket":      ["AVG MC/Visa Ticket b0c69a79-25ef-47c0-ad64-84b2d9207ec7", "AVG Amex Ticket c2ed4af8-6174-4dc7-872a-1e97dcccf26b"],
+  "HighestTicket":        ["Highest Ticket 99ef2fb2-548e-426c-a5fb-3c4053ca5358"],
+  "EquipmentDevice":      ["Equipment Short 3f2ad923-8010-4889-9a7b-1f84edaff7e6", "Equipment Type p11 5133b5a0-358b-40b4-a549-3deb01479709"],
+  "EquipmentQuantity":    ["Equipment-Quantity 55b9d05f-c059-447c-807b-22c6f81621f9"],
+  "MonthlyLeaseAmount":   ["Monthly Lease Cost 1a809824-3bbb-443d-b9f3-9b47d98b3c16", "Monthly Price 826e3359-26a4-4c3b-8ac9-e02ad0649272"],
+  "TotalLeaseAmount":     ["Total Lease Cost 07c3de2d-f83e-4fe6-b741-a71e8f72dc03", "Total Lease Cost d04d7639-d6a4-4faa-b15d-4cbb1107f40a"],
+  "LeaseTerm":            ["AzuraSubscriptionMonths 7e0bb337-dff3-461f-80d3-c68e644dccc4"],
+  "MonthlyStatementFee":  ["AzuraSubscriptionAmount 3447b8cc-132e-4a26-aee3-a0c55eac9965"],
+};
+
+// ─── Populate reference table ─────────────────────────────────────────────────
+(function buildTable() {
+  const tbody = document.getElementById("param-table-body");
+  for (const [key, labels] of Object.entries(TEXT_TAB_MAP)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${key}</td><td>${labels.length} tab${labels.length > 1 ? "s" : ""}</td>`;
+    tbody.appendChild(tr);
+  }
+})();
+
+// ─── Sample payload ───────────────────────────────────────────────────────────
+const SAMPLE = {
+  SalesRepName: "Jane Smith",
+  DBAName: "Acme Coffee",
+  LegalName: "Acme Coffee LLC",
+  EntityType: "LLC",
+  MerchandiseType: "Coffee & Beverages",
+  BusinessAddress: "123 Main St",
+  BusinessCity: "Austin",
+  BusinessState: "TX",
+  BusinessZip: "78701",
+  BusinessPhone: "5125551234",
+  BusinessEmail: "owner@acmecoffee.com",
+  DateBusinessStarted: "2018-03-15",
+  FederalTaxID: "12-3456789",
+  OwnerFirstName: "John",
+  OwnerMI: "A",
+  OwnerLastName: "Doe",
+  OwnershipPercent: "100",
+  OwnerTitle: "Owner",
+  OwnerPhone: "5125559876",
+  OwnerAddress: "456 Oak Ave",
+  OwnerCity: "Austin",
+  OwnerState: "TX",
+  OwnerZip: "78702",
+  BankName: "Chase Bank",
+  GrossYearlySales: "250000",
+  YearlyMCVisaVolume: "200000",
+  YearlyDiscoverVolume: "25000",
+  AmexYearlyVolume: "25000",
+  AvgMCVisaTicket: "35",
+  HighestTicket: "500",
+  EquipmentDevice: "Clover Mini",
+  EquipmentQuantity: "2",
+  MonthlyLeaseAmount: "49.99",
+  TotalLeaseAmount: "1799.64",
+  LeaseTerm: "36",
+  MonthlyStatementFee: "9.95",
+};
+
+// ─── UI actions ───────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById("error-msg");
+  el.style.display = "block";
+  el.textContent = msg;
+}
+
+function clearError() {
+  const el = document.getElementById("error-msg");
+  el.style.display = "none";
+  el.textContent = "";
+}
+
+function generate() {
+  clearError();
+  const pfId = document.getElementById("powerform-id").value.trim();
+  const raw  = document.getElementById("fields-json").value.trim();
+
+  if (!pfId) { showError("Please enter a PowerForm ID."); return; }
+  if (!raw)  { showError("Please paste a docusign_fields JSON object."); return; }
+
+  let fields;
+  try {
+    fields = JSON.parse(raw);
+  } catch (e) {
+    showError("Invalid JSON: " + e.message);
+    return;
+  }
+
+  // Strip PII
+  const safe = Object.fromEntries(
+    Object.entries(fields).filter(([k]) => !STRIP_KEYS.has(k))
+  );
+
+  const params = new URLSearchParams({ PowerFormId: pfId });
+  let paramCount = 0;
+
+  for (const [fieldKey] of Object.entries(TEXT_TAB_MAP)) {
+    const val = safe[fieldKey];
+    if (val == null || val === "") continue;
+    // PowerForm pre-fill uses DocuSign_ prefix + the field key name
+    params.set(`DocuSign_${fieldKey}`, String(val));
+    paramCount++;
+  }
+
+  const link = `${BASE_URL}?${params.toString()}`;
+
+  const anchor = document.getElementById("generated-link");
+  anchor.href        = link;
+  anchor.textContent = link;
+
+  document.getElementById("stats").innerHTML =
+    `<strong>${paramCount}</strong> fields encoded &nbsp;·&nbsp; ` +
+    `${link.length.toLocaleString()} characters &nbsp;·&nbsp; ` +
+    `PII keys excluded automatically`;
+
+  document.getElementById("output-section").style.display = "block";
+  document.getElementById("output-section").scrollIntoView({ behavior: "smooth" });
+}
+
+function copyLink() {
+  const link = document.getElementById("generated-link").href;
+  navigator.clipboard.writeText(link).then(() => {
+    const badge = document.getElementById("copied-badge");
+    badge.classList.add("show");
+    setTimeout(() => badge.classList.remove("show"), 2000);
+  });
+}
+
+function openLink() {
+  const href = document.getElementById("generated-link").href;
+  if (href && href !== "#") window.open(href, "_blank", "noopener");
+}
+
+function loadSample() {
+  document.getElementById("fields-json").value = JSON.stringify(SAMPLE, null, 2);
+}
+
+function clearAll() {
+  document.getElementById("powerform-id").value = "";
+  document.getElementById("fields-json").value  = "";
+  document.getElementById("output-section").style.display = "none";
+  clearError();
+}
+</script>
+</body>
+</html>
