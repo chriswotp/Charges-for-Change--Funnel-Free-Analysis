@@ -1,0 +1,14 @@
+{
+  "name": "charges-for-change-funnel-free",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node test/test-create-envelope.mjs"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {}
+}
